@@ -1,0 +1,4 @@
+interface:
+  display_name: "md2resume Pitfalls"
+  short_description: "可靠地把 Markdown 简历生成一页 DOCX"
+  default_prompt: "Use $md2resume-pitfalls to generate a one-page DOCX resume while avoiding the project’s known template and pagination pitfalls."
