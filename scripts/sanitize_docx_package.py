@@ -13,6 +13,13 @@ CORE = "docProps/core.xml"
 RELS = "_rels/.rels"
 
 
+def _sanitize_fonts(xml: bytes) -> bytes:
+    """Remap the standalone restricted Courier font without touching Courier New."""
+    text = xml.decode("utf-8")
+    text = re.sub(r'((?:ascii|hAnsi|eastAsia|cs|name|w:val)=")Courier(")', r'\1Arial\2', text)
+    return text.encode("utf-8")
+
+
 def _scrub_core(xml: bytes) -> bytes:
     text = xml.decode("utf-8")
     text = re.sub(r"(<dc:creator>)[^<]*(</dc:creator>)", r"\1md2resume\2", text)
@@ -45,6 +52,8 @@ def sanitize(path: Path, image: Path | None = None) -> None:
                 data = _scrub_core(data)
             elif item.filename == RELS:
                 data = _scrub_rels(data)
+            elif item.filename in {"word/styles.xml", "word/stylesWithEffects.xml", "word/fontTable.xml"}:
+                data = _sanitize_fonts(data)
             elif image is not None and item.filename == "word/media/image1.jpeg":
                 data = image.read_bytes()
             dst.writestr(item, data)

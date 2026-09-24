@@ -138,12 +138,18 @@ def parse_resume(path: Path) -> Resume:
 
         if section == "实习经历" and current is not None:
             if line.startswith("**") and not line.startswith("- "):
-                current.project = strip_outer_bold(line)
+                bold_text = strip_outer_bold(line)
+                if bold_text.startswith("【项目】"):
+                    current.project = bold_text
+                else:
+                    current.bullets.append(bold_text)
             elif line.startswith("- "):
                 detail = line[2:].strip()
                 if detail.startswith(">"):
                     detail = detail[1:].strip()
                 current.bullets.append(detail)
+            elif current.project and not current.bullets:
+                current.project += "｜" + line
             continue
 
         if section == "核心能力" and line.startswith("- "):

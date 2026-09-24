@@ -87,11 +87,12 @@ def _cfg_for(scale: float, dense: bool = False) -> _Cfg:
         c = replace(
             c,
             line_multiple=1.0,
-            m_top=0.7, m_bottom=0.5, m_lr=1.1,
-            sec_before=c.sec_before * 0.7, sec_after=max(0.5, c.sec_after * 0.7),
-            entry_before=c.entry_before * 0.7,
-            bullet_after=max(0.2, c.bullet_after * 0.6),
-            proj_before=c.proj_before * 0.7,
+            m_top=0.5, m_bottom=0.35, m_lr=0.95,
+            sec_before=c.sec_before * 0.55, sec_after=max(0.4, c.sec_after * 0.7),
+            entry_before=c.entry_before * 0.55,
+            bullet_after=max(0.2, c.bullet_after * 0.45),
+            proj_before=c.proj_before * 0.6,
+            photo_w=2.0,
         )
     return c
 
@@ -264,8 +265,8 @@ def _render_result_bar(doc, text, cfg):
     """成果高亮蓝条：浅蓝 #EBF3FB 底 + 左侧蓝竖条 #2E75B6 + 深蓝成果文字（对齐模版.docx）。"""
     p = doc.add_paragraph()
     pf = p.paragraph_format
-    pf.space_before = Pt(1.5)
-    pf.space_after = Pt(1.5)
+    pf.space_before = Pt(1)
+    pf.space_after = Pt(1)
     pf.line_spacing = cfg.line_multiple
     pf.left_indent = Cm(0.3)
     pf.right_indent = Cm(0.1)
@@ -280,6 +281,16 @@ def _render_bullet(doc, detail, cfg):
     stripped = detail.strip()
     if stripped.startswith("> "):
         return _render_result_bar(doc, stripped[2:], cfg)
+    # 项目小注：以 "~ " 开头 → 浅灰小字，紧贴项目标题
+    if stripped.startswith("~ "):
+        p = doc.add_paragraph()
+        pf = p.paragraph_format
+        pf.space_before = Pt(0)
+        pf.space_after = Pt(1)
+        pf.line_spacing = 1.0
+        pf.left_indent = Cm(0.05)
+        _add_inline_runs(p, stripped[2:], size=cfg.body_size - 1.5, color=LIGHT_GRAY)
+        return
     # 项目子标题：【项目X】xxx → 深蓝加粗
     if _is_project_header(detail):
         text = detail.strip()[2:-2]
@@ -324,6 +335,12 @@ def render_docx(resume_data: ResumeData, photo_path: str | None = None, scale: f
     npf.space_before = Pt(0)
     npf.space_after = Pt(0)
     npf.line_spacing = cfg.line_multiple
+
+    # 关闭段落对齐文档网格（默认模板 docGrid linePitch=360=18pt）：开启时段落高度会被
+    # 量化到 18pt 整数倍，微调行距/段距会导致高度整体跳变（约 2 倍放大），无法精确排版。
+    snap = OxmlElement("w:snapToGrid")
+    snap.set(qn("w:val"), "0")
+    normal.element.get_or_add_pPr().append(snap)
 
     _render_header(doc, resume_data, photo_path, cfg, content_width_cm)
 
